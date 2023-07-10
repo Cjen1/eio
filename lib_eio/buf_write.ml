@@ -544,3 +544,23 @@ let drain =
       loop t (len + acc)
   in
   fun t -> loop t 0
+
+type 'a writer = Cstruct.buffer -> pos:int -> 'a -> int
+type 'a sizer = 'a -> int
+
+module Bin_io (B : sig
+  val size_header_length : int
+  val bin_write_size_header : int writer
+end) = struct
+  open! B
+
+  let write write_buf (writer : _ writer) (sizer : _ sizer)  t =
+    let hlen = B.size_header_length in
+    let vlen = sizer t in
+    let tlen = vlen + hlen in
+    let blit x ~src_off:_ (cstbuf : Cstruct.buffer) ~dst_off:pos ~len =
+      let pos = B.bin_write_size_header cstbuf ~pos (len - hlen) in
+      writer cstbuf ~pos x |> ignore
+    in
+    write_gen write_buf ~blit ~off:0 ~len:tlen t
+end

@@ -434,3 +434,24 @@ let seq ?(stop=at_end_of_input) p t =
   aux t.consumed
 
 let lines t = seq line t
+
+type 'a reader = Cstruct.buffer -> pos_ref:(int ref) -> 'a
+module Bin_io (B : sig
+  val size_header_length : int
+  val bin_read_size_header : int reader
+end) = struct
+  open! B
+
+  let read (reader : _ reader) (t : t) =
+    ensure t size_header_length;
+    let pos_ref = ref t.pos in
+    let len = bin_read_size_header t.buf ~pos_ref in
+    ensure t (len + size_header_length);
+    let init_pos = t.pos + size_header_length in
+    pos_ref := init_pos;
+    let x = reader t.buf ~pos_ref in
+    let len' = !pos_ref - init_pos  in
+    assert (len' = len);
+    consume t (len + size_header_length);
+    x
+end

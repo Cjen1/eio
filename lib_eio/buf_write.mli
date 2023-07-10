@@ -320,3 +320,16 @@ val drain : t -> int
     bytes that were enqueued to be written and freeing any scheduled
     buffers in the process. Note that this does not close [t] itself,
     and does not return until [t] has been closed. *)
+
+type 'a writer = Cstruct.buffer -> pos:int -> 'a -> int
+type 'a sizer = 'a -> int
+module Bin_io : 
+  functor
+    (B : sig
+       val size_header_length : int
+       val bin_write_size_header : int writer
+     end)
+    -> sig
+    val write :
+      t -> 'a writer -> 'a sizer -> 'a -> unit
+  end

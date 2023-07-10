@@ -316,3 +316,14 @@ val eof_seen : t -> bool
 
     Note that this returns [false] if we're at the end of the stream but don't know it yet.
     Use {!at_end_of_input} to be sure. *)
+
+type 'a reader = Cstruct.buffer -> pos_ref:(int ref) -> 'a
+
+module Bin_io : functor
+  (B : sig
+     val size_header_length : int
+     val bin_read_size_header : int reader
+   end)
+  -> sig
+  val read : 'a reader -> t -> 'a
+end
